@@ -1,45 +1,44 @@
 const BaseAPI = require('../baseAPI.js');
 const settings = require('../../settings');
 
-class PrivateMailController {
-  constructor() {
-    this.apiHost = settings.app.apiHost;
+class PrivateMailController extends BaseAPI {
+  constructor(apiConfig) {
+    super(apiConfig);
     this.appHost = settings.app.appHost;
-    this.headers = settings.pm;
     this.endpoints = settings.endpoints;
-    this.api = new BaseAPI({
-      baseURL: this.apiHost,
-      headers: this.headers,
-    });
   }
 
   async getInbox(page = 1) {
-    return this.api.get(this.endpoints.inbox, {
-      params: { page, is_star: 0, is_unread: 0 },
+    return this.get(this.endpoints.inbox, {
+      params: { page, is_star: 0, is_unread: 0, is_information: 0 },
     });
   }
 
   async getMailDetail(mailId) {
-    return this.api.get(`${this.endpoints.mail}/${mailId}`, {
+    return this.get(`${this.endpoints.mail}/${mailId}`, {
       baseURL: this.appHost,
     });
   }
 
   async getProfile() {
-    return this.api.get(this.endpoints.users);
+    return this.get(this.endpoints.users);
+  }
+
+  async getMenu() {
+    return this.get(this.endpoints.menu);
   }
 
   async downloadImage(imageUrl) {
-    const response = await this.api.get(imageUrl, {
+    const { error, data, headers } = await this.get(imageUrl, {
       responseType: 'arraybuffer',
     });
 
-    const result = { contentType: response.headers['content-type'] };
+    const result = { contentType: headers['content-type'] || 'image/jpeg' };
 
-    if (!response.error) {
-      const base64String = Buffer.from(response.data).toString('base64');
+    if (!error) {
+      const base64String = Buffer.from(data).toString('base64');
       result.rawBase64String = base64String;
-      result.base64String = `data:'${response.headers['content-type']}';base64,${base64String}`;
+      result.base64String = `data:'${result.contentType}';base64,${base64String}`;
     } else {
       result.base64String = '';
     }
